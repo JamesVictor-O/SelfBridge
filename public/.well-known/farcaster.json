@@ -1,0 +1,17 @@
+{
+    "frame": {
+      "version": "1",
+      "name": "Self Verification Frame",
+      "iconUrl": "https://your-app.com/logo.png",
+      "homeUrl": "https://your-app.com",
+      "imageUrl": "https://your-app.com/og-image.png",
+      "buttonTitle": "Verify Now",
+      "splashImageUrl": "https://your-app.com/splash.png",
+      "splashBackgroundColor": "#ffffff"
+    },
+    "accountAssociation": {
+      "header": "<your-farcaster-signature-header>",
+      "payload": "<your-farcaster-signature-payload>",
+      "signature": "<your-farcaster-signature>"
+    }
+  }
