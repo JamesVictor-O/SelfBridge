@@ -1,66 +1,28 @@
-'use client';
+import { Metadata } from 'next';
+import SelfVerificationClient from '../components/SelfVerificationClient';
 
-import React, { useState, useEffect } from 'react';
-import SelfQRcodeWrapper, { SelfAppBuilder } from '@selfxyz/qrcode';
-import { v4 as uuidv4 } from 'uuid';
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Self Verification",
+    other: {
+      "fc:frame": JSON.stringify({
+        version: "vNext",
+        imageUrl: `${process.env.NEXT_PUBLIC_URL}/og-image.png`,
+        buttons: [{ label: "Verify with Self 🔐", action: "post_redirect" }],
+        postUrl: `${process.env.NEXT_PUBLIC_URL}/api/verify`,
+      }),
+    },
+  };
+}
 
-export default function SelfVerificationFrame() {
-  const [userId, setUserId] = useState(null);
-  const [verificationStatus, setVerificationStatus] = useState('pending');
-
-  useEffect(() => {
-    setUserId(uuidv4());
-  }, []);
-
-  if (!userId) return <div>Loading...</div>;
-
-  // Configure SelfApp
-  const selfApp = new SelfAppBuilder({
-    appName: 'Self Verification Frame',
-    // scope: process.env.APP_SCOPE, // e.g., 'my-self-frame-app'
-    scope: "my-app-scope", 
-    // endpoint: process.env.NEXT_PUBLIC_BACKEND_ENDPOINT, // e.g., 'https://your-app.com/api/verify'
-    endpoint: "https://myapp.com/api/verify",
-    endpointType: 'https',
-    userId,
-  }).build();
-
+export default function Page() {
   return (
-    <div style={{ textAlign: 'center', padding: '20px', maxWidth: '424px', margin: 'auto' }}>
-      <h1>Verify Your Identity</h1>
-      <p>Scan the QR code with the Self app to prove your humanity.</p>
-      
-      <SelfQRcodeWrapper
-        selfApp={selfApp}
-        onSuccess={() => {
-          console.log('Verification successful!');
-          setVerificationStatus('success');
-        }}
-        size={300}
-      />
-      <p style={{ color: verificationStatus === 'success' ? 'green' : 'gray' }}>
-        Status: {verificationStatus === 'success' ? 'Verified!' : 'Awaiting verification...'}
+    <div className="flex flex-col items-center p-8">
+      <h1 className="text-2xl font-bold mb-4">Verify Your Identity</h1>
+      <SelfVerificationClient />
+      <p className="mt-4 text-gray-600">
+        Scan with the Self app to verify
       </p>
-      {verificationStatus === 'success' && (
-        <p>Congrats! You're verified and eligible for airdrops or gated content.</p>
-      )}
-      <meta
-        name="fc:frame"
-        content={JSON.stringify({
-          version: 'next',
-          imageUrl: 'https://your-app.com/og-image.png', // Replace with your OpenGraph image
-          button: {
-            title: 'Verify Now',
-            action: {
-              type: 'launch_frame',
-              name: 'Self Verification',
-              url: 'https://your-app.com',
-              splashImageUrl: 'https://your-app.com/splash.png',
-              splashBackgroundColor: '#ffffff',
-            },
-          },
-        })}
-      />
     </div>
   );
 }

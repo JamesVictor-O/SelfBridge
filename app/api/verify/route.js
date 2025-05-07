@@ -1,50 +1,55 @@
-import { SelfBackendVerifier, getUserIdentifier } from '@selfxyz/core';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+import { SelfBackendVerifier, getUserIdentifier } from '@selfxyz/core';
+import { env } from '@/env.mjs';
+
+export const dynamic = 'force-dynamic'; // Required for Frame callbacks
+
+export async function POST(req) {
+  const { proof, publicSignals } = await req.json();
+
+  if (!proof || !publicSignals) {
+    return Response.json(
+      { error: "Proof and publicSignals required" },
+      { status: 400 }
+    );
   }
 
   try {
-    const { proof, publicSignals } = req.body;
-
-    if (!proof || !publicSignals) {
-      return res.status(400).json({ message: 'Proof and publicSignals are required' });
-    }
-
-    // Initialize the verifier
-    const selfBackendVerifier = new SelfBackendVerifier(
-      process.env.NEXT_PUBLIC_APP_SCOPE, // e.g., 'my-self-frame-app'
-      process.env.NEXT_PUBLIC_BACKEND_ENDPOINT // e.g., 'https://your-app.com/api/verify'
+    const verifier = new SelfBackendVerifier(
+      env.NEXT_PUBLIC_APP_SCOPE,
+      `${env.NEXT_PUBLIC_URL}/api/verify`
     );
 
-    // Extract user ID
     const userId = await getUserIdentifier(publicSignals);
-    console.log('Extracted userId:', userId);
+    const result = await verifier.verify(proof, publicSignals);
 
-    // Verify the proof
-    const result = await selfBackendVerifier.verify(proof, publicSignals);
-
-    if (result.isValid) {
-      return res.status(200).json({
-        status: 'success',
-        result: true,
-        credentialSubject: result.credentialSubject,
-      });
-    } else {
-      return res.status(500).json({
-        status: 'error',
-        result: false,
-        message: 'Verification failed',
-        details: result.isValidDetails,
-      });
+    if (!result.isValid) {
+      return Response.json(
+        {
+          fcFrame: {
+            imageUrl: `${env.NEXT_PUBLIC_URL}/failed.png`,
+            buttons: [{ label: "Retry", action: "post_redirect" }],
+          },
+          error: result.isValidDetails,
+        },
+        { status: 400 }
+      );
     }
-  } catch (error) {
-    console.error('Error verifying proof:', error);
-    return res.status(500).json({
-      status: 'error',
-      result: false,
-      message: error instanceof Error ? error.message : 'Unknown error',
+
+    return Response.json({
+      fcFrame: {
+        imageUrl: `${env.NEXT_PUBLIC_URL}/verified.png`,
+        buttons: [{ label: "Continue", action: "post_redirect" }],
+      },
+      userId,
+      credentialSubject: result.credentialSubject, // e.g., { isHuman: true }
     });
+
+  } catch (error) {
+    console.error("Verification error:", error);
+    return Response.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
